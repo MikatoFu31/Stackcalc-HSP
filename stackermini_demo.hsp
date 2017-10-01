@@ -1,0 +1,136 @@
+#include "hsptv.as"
+*init
+	sdim code,4096
+	sdim console,65536
+	dim stack,1024
+	dim stackindex
+
+	font msgothic,15
+	mes "Tiny Stack Machine version 1.0.0 beta            developer's Twitter:@mikatofu31\nWhat is Tiny Stack Machine(TSM) ?\n  TSMとは、ひとことで言うとスタック電卓です。\n  逆ポーランド記法を用い、計算式を比較的簡単に記述できます。\n  HSPのプログラム中で利用すると、複雑な計算式を拡張性を持たせつつ簡略にできます。\n  HSP3.4用のモジュールを配布しておりますので是非お使いください。\n  使用できる命令は以下の通りです。\n  + - * / mod . .s drop dup "
+	objmode 2,1
+	objsize 640,25
+	button goto "モジュール配布ページ ＆ 詳細",*web
+	button goto "コードの書き方(wikipedia)",*wiki
+	pos 0,180
+	mes "TSM test area"
+	mesbox code,640,200,1
+	button goto "実行",*start
+	button goto "強制停止 ＆ リセット",*reset
+	mes "Console Output:"
+	stop
+*wiki
+	exec "https://ja.wikipedia.org/wiki/逆ポーランド記法",16
+	stop
+*web
+	exec "https://github.com/MikatoFu31/Stackcalc-HSP",16
+	stop
+*start
+	color 255,255,255
+	boxf 500,180,640,200
+	pos 500,180
+	color 0,0,0
+	mes "running"
+
+	dim error
+	dim wordone,1024
+	dim wordindex
+	
+	if code="":goto *endmain
+*main
+	getstr wordone,code,wordindex,' ',32
+	wordindex+=strsize
+	if wordone=int(wordone){
+		stack(stackindex)=int(wordone)
+		stackindex++
+	}
+	if wordone="dup"{
+		stack(stackindex)=stack(limit(stackindex-1,0,length(stack)))
+		stackindex++
+	}
+	if wordone="."{
+		pos 0,460
+		color 0,0,0
+		console+=str(stack(limit(stackindex-1,0,length(stack))))+" "
+		mes console
+		stackindex--
+	}
+	if wordone=".s"{
+		pos 0,460
+		color 0,0,0
+		console+="[ "
+		for count,0,stackindex,1
+			console+=str(stack(count))+" "
+		next
+		console+="]"
+		mes console
+	}
+	if wordone="drop"{
+		stack(limit(stackindex-1,0,length(stack)))=0
+		stackindex--
+	}
+	if wordone="mod"{
+		if stackindex>=2{
+			stack(stackindex-2)=stack(stackindex-2)\stack(stackindex-1)
+			stackindex--
+		}else{
+			dialog "stack over flow"
+			error=1
+		}
+	}
+	if wordone="+"{
+		if stackindex>=2{
+			stack(stackindex-2)=stack(stackindex-2)+stack(stackindex-1)
+			stackindex--
+		}else{
+			dialog "stack over flow"
+			error=1
+		}
+	}
+	if wordone="-"{
+		if stackindex>=2{
+			stack(stackindex-2)=stack(stackindex-2)-stack(stackindex-1)
+			stackindex--
+		}else{
+			dialog "stack over flow"
+			error=1
+		}
+	}
+	if wordone="*"{
+		if stackindex>=2{
+			stack(stackindex-2)=stack(stackindex-2)*stack(stackindex-1)
+			stackindex--
+		}else{
+			dialog "stack over flow"
+			error=1
+		}
+	}
+	if wordone="/"{
+		if stackindex>=2{
+			stack(stackindex-2)=stack(stackindex-2)/stack(stackindex-1)
+			stackindex--
+		}else{
+			dialog "stack over flow"
+			error=1
+		}
+	}
+	if stackindex>=length(stack) | stackindex<0{
+		dialog "stack over flow"
+		error=1
+	}
+	if wordindex>=strlen(code) | error=1:goto *endmain
+	if wordone="":goto *main
+	await 5
+	goto *main
+*reset
+	dim stack,32
+	color 255,255,255
+	boxf 0,460,640,480
+
+	stackindex=0
+*endmain
+	color 255,255,255
+	boxf 500,180,640,200
+	pos 500,180
+	color 0,0,0
+	mes "finish"
+	stop
